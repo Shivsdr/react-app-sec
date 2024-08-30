@@ -2,6 +2,15 @@ import React, { useContext, useState } from 'react'
 import { collection, query, where,getDocs, serverTimestamp, doc, setDoc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from '../firebase';
 import {AuthContext} from "../context/AuthContext"
+const CryptoJS = require("crypto-js");
+
+// Generate a random session key
+function generateSessionKey() {
+  return CryptoJS.lib.WordArray.random(128/8);
+}
+const sessionKeyWordArrayFormat = generateSessionKey();
+const sessionKey = CryptoJS.enc.Hex.stringify(sessionKeyWordArrayFormat);
+console.log(sessionKey)
 const Search = () => {
   const [username, setUsername] = useState("")
   const [user, setUser ]= useState(null)
@@ -36,7 +45,8 @@ const Search = () => {
           [combinedId+".userInfo"]:{
             uid:user.uid,
             displayName: user.displayName,
-            photoURL: user.photoURL
+            photoURL: user.photoURL,
+            sessionKey:sessionKey,
           },
           [combinedId+".date"]:serverTimestamp()
         });
@@ -44,13 +54,14 @@ const Search = () => {
           [combinedId+".userInfo"]:{
             uid:currentUser.uid,
             displayName: currentUser.displayName,
-            photoURL: currentUser.photoURL
+            photoURL: currentUser.photoURL,
+            sessionKey:sessionKey,
           },
           [combinedId+".date"]:serverTimestamp()
         });
       }
     }catch(err){
-
+      setErr(true)
     }
     setUser(null);
     setUsername("");

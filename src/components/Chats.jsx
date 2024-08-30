@@ -23,6 +23,7 @@ const Chats = () => {
 
     // console.log(Object.entries(chats))
     const handleSelect = (u) =>{
+        console.log(u);
         dispatch({type:"CHANGE_USER",payload:u})
     }
   return (
@@ -33,7 +34,6 @@ const Chats = () => {
             <img src={chat[1].userInfo.photoURL} alt="" />
             <div className="userChatInfo">
                 <span>{chat[1].userInfo.displayName}</span>
-                <p>{chat[1].lastMessage?.text}</p>
             </div>
         </div>
         ))}

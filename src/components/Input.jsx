@@ -7,16 +7,51 @@ import { Timestamp, arrayUnion, doc, serverTimestamp, updateDoc } from 'firebase
 import { db, storage } from '../firebase';
 import {v4 as uuid} from 'uuid';
 import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
+import {  getDoc } from "firebase/firestore";
+const CryptoJS = require("crypto-js");
+// let mainsessionKey;
+// function encryptText(textInput) {
+
+//   let ciphertext = CryptoJS.AES.encrypt(textInput, mainsessionKey);
+//   return ciphertext.toString();
+// }
 
 const Input = () => {
   const [text, setText] = useState("")
   const [img, setImg] = useState(null)
   const {currentUser} = useContext(AuthContext);
   const {data} = useContext(ChatContext);
+  const combinedId = currentUser.uid > data.user.uid ? currentUser.uid + data.user.uid: data.user.uid + currentUser.uid ;
+  // let mainsessionKey;
+
+  // const handleEncryption = (inputText)=>{
+  //   let ciphertext = CryptoJS.AES.encrypt(inputText, mainsessionKey);
+  //   return ciphertext.toString();
+  // }
   const handleKey = (e)=>{
     e.code === "Enter" && handleSend()
   };
   const handleSend = async()=>{
+   
+    
+    const docRef = doc(db, "userChats", currentUser.uid);
+    const docSnap = await getDoc(docRef);
+    let sessionKey;
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      sessionKey = data[combinedId]['userInfo']['sessionKey'];
+      // mainsessionKey = sessionKey;
+      console.log("Document data:", sessionKey);
+    } else {
+      // docSnap.data() will be undefined in this case
+      console.log("No such document!");
+    }
+    console.log("text=", typeof(text))
+    let ciphertext = CryptoJS.AES.encrypt(text, sessionKey);
+    console.log (ciphertext.toString());
+    let text1 = ciphertext.toString();
+    console.log("text1=",text1);
+    // encryptText();
     if(img){
       const storageRef = ref(storage, uuid());
       const uploadTask = uploadBytesResumable(storageRef, img);
@@ -44,7 +79,7 @@ const Input = () => {
             await updateDoc(doc(db,"chats",data.chatId),{
               messages: arrayUnion({
                 id:uuid(),
-                text,
+                text1,
                 senderId:currentUser.uid,
                 date:Timestamp.now(),
                 img: downloadURL,
@@ -57,7 +92,7 @@ const Input = () => {
       await updateDoc(doc(db,"chats",data.chatId),{
         messages: arrayUnion({
           id:uuid(),
-          text,
+          text1,
           senderId:currentUser.uid,
           date:Timestamp.now(),
         }),
@@ -65,14 +100,14 @@ const Input = () => {
     }
     await updateDoc(doc(db,"userChats",currentUser.uid),{
       [data.chatId+".lastMessage"]:{
-        text
+        text1
       },
       [data.chatId+".date"]: serverTimestamp(),
     });
 
     await updateDoc(doc(db,"userChats",data.user.uid),{
       [data.chatId+".lastMessage"]:{
-        text
+        text1
       },
       [data.chatId+".date"]: serverTimestamp(),
     });
